@@ -19,6 +19,7 @@ spec:
     nifiProperties:
       overrideConfigs: |
         nifi.sensitive.props.key=nifikop-poc-sensitive-key-2026
+        nifi.web.http.host=0.0.0.0
 
   nifiClusterTaskSpec:
     retryDurationMinutes: 15
