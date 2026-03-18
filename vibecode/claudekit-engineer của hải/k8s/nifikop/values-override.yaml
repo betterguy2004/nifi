@@ -1,0 +1,26 @@
+# NiFiKop Operator — POC override values
+# Context: kubernetes-admin@ec2k8s, no SSL, no cert-manager
+
+image:
+  tag: v1.16.0-release
+  pullPolicy: IfNotPresent
+
+namespaces:
+  - nifi
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+certManager:
+  enabled: false
+
+webhook:
+  enabled: false
+
+logLevel: Info
+logEncoding: json
