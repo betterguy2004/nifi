@@ -73,6 +73,8 @@ cluster:
   nodes:
     - id: 0
       nodeConfigGroup: "default_group"
+    - id: 1
+      nodeConfigGroup: "default_group"
   listenersConfig:
     internalListeners:
       - type: "http"
