@@ -187,6 +187,11 @@ spec:
   nifiClusterTaskSpec:
     retryDurationMinutes: {{ .Values.cluster.retryDurationMinutes }}
   listenersConfig:
-  {{- toYaml .Values.cluster.listenersConfig | nindent 4 }}
+    internalListeners:
+    {{- toYaml .Values.cluster.listenersConfig.internalListeners | nindent 6 }}
+    {{- if .Values.cluster.listenersConfig.sslSecrets }}
+    sslSecrets:
+    {{- toYaml .Values.cluster.listenersConfig.sslSecrets | nindent 6 }}
+    {{- end }}
   externalServices:
   {{- toYaml .Values.cluster.externalServices | nindent 4 }}

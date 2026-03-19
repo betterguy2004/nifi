@@ -77,7 +77,6 @@ cluster:
     - id: 1
       nodeConfigGroup: "default_group"
   listenersConfig:
-    sslSecrets: {}
     internalListeners:
       - type: "http"
         name: "http"
