@@ -1,10 +1,37 @@
 # nifi-cluster
 
-![Version: 1.16.0](https://img.shields.io/badge/Version-1.16.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.28.0](https://img.shields.io/badge/AppVersion-1.28.0-informational?style=flat-square)
+![Version: 1.16.0](https://img.shields.io/badge/Version-1.16.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.6.0](https://img.shields.io/badge/AppVersion-2.6.0-informational?style=flat-square)
 
-A Helm chart for deploying NiFi clusters in Kubernetes
+A Helm chart for deploying NiFi clusters in Kubernetes via the [NiFiKop](https://github.com/konpyutaika/nifikop) operator.
+
+> **Note:** This chart is sourced from the upstream [konpyutaika/nifikop](https://github.com/konpyutaika/nifikop/tree/v1.16.0-release/helm/nifi-cluster) v1.16.0 release. The `appVersion` has been updated to `2.6.0` to reflect our NiFi 2.x deployment.
 
 **Homepage:** <https://github.com/konpyutaika/nifikop>
+
+## Quick Start (POC)
+
+```bash
+# Prerequisites: NiFiKop operator already installed in the nifi namespace
+# Install NiFi cluster with our POC overrides
+helm install nifi-cluster ./k8s/nifi-cluster \
+  -f ./k8s/values-nifi-cluster.yaml \
+  -n nifi --create-namespace
+
+# Access NiFi UI
+kubectl port-forward svc/nifi-cluster-ip 8080:8080 -n nifi
+# Open http://localhost:8080/nifi
+```
+
+### NiFi 2.x Overrides (values-nifi-cluster.yaml)
+
+Key differences from chart defaults for NiFi 2.6.0:
+- `cluster.manager: kubernetes` (not zookeeper)
+- `cluster.image.tag: "2.6.0"`
+- `zookeeper.enabled: false`
+- Listeners: drop `prometheus`, add `load-balance` (port 6342)
+- `serviceAccountName: "nifi-cluster"` (chart-managed SA with RBAC for leases)
+- `nifi.sensitive.props.key` explicitly set
+- `nifi.web.http.host=0.0.0.0` for port-forward access
 
 ## Source Code
 
