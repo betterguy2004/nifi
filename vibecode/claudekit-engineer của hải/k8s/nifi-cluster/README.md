@@ -14,7 +14,7 @@ A Helm chart for deploying NiFi clusters in Kubernetes via the [NiFiKop](https:/
 # Prerequisites: NiFiKop operator already installed in the nifi namespace
 # Install NiFi cluster with our POC overrides
 helm install nifi-cluster ./k8s/nifi-cluster \
-  -f ./k8s/values-nifi-cluster.yaml \
+  -f ./k8s/nifi-cluster/values-override.yaml \
   -n nifi --create-namespace
 
 # Access NiFi UI
@@ -22,7 +22,7 @@ kubectl port-forward svc/nifi-cluster-ip 8080:8080 -n nifi
 # Open http://localhost:8080/nifi
 ```
 
-### NiFi 2.x Overrides (values-nifi-cluster.yaml)
+### NiFi 2.x Overrides (values-override.yaml)
 
 Key differences from chart defaults for NiFi 2.6.0:
 - `cluster.manager: kubernetes` (not zookeeper)
