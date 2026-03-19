@@ -1,49 +1,26 @@
-apiVersion: nifi.konpyutaika.com/v1
-kind: NifiCluster
-metadata:
-  name: nifi-cluster
-  namespace: nifi
-spec:
-  clusterImage: "apache/nifi:2.6.0"
-  initContainerImage: "bash:5.2.2"
-  clusterManager: kubernetes
-  oneNifiNodePerNode: false
-  propagateLabels: true
 
+# NiFi Cluster Helm values override for POC
+# Overrides upstream nifi-cluster chart defaults for NiFi 2.6.0 on Kubernetes manager
+# Usage: helm install nifi-cluster ./k8s/nifi-cluster -f ./k8s/values-nifi-cluster.yaml -n nifi
+
+cluster:
+  manager: kubernetes
   service:
     headlessEnabled: true
     annotations:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-
-  readOnlyConfig:
-    nifiProperties:
-      overrideConfigs: |
-        nifi.sensitive.props.key=nifikop-poc-sensitive-key-2026
-        nifi.web.http.host=0.0.0.0
-
-  nifiClusterTaskSpec:
-    retryDurationMinutes: 15
-
-  listenersConfig:
-    internalListeners:
-      - containerPort: 8080
-        type: http
-        name: http
-      - containerPort: 6007
-        type: cluster
-        name: cluster
-      - containerPort: 10000
-        type: s2s
-        name: s2s
-      - containerPort: 6342
-        type: load-balance
-        name: load-balance
-
+  image:
+    tag: "2.6.0"
+  nifiProperties:
+    overrideConfigs: |
+      nifi.sensitive.props.key=nifikop-poc-sensitive-key-2026
+      nifi.web.http.host=0.0.0.0
+      nifi.web.proxy.context.path=/nifi-cluster
   nodeConfigGroups:
     default_group:
-      imagePullPolicy: IfNotPresent
       isNode: true
-      serviceAccountName: default
+      imagePullPolicy: IfNotPresent
+      serviceAccountName: "nifi-cluster"
       resourcesRequirements:
         requests:
           cpu: "1"
@@ -55,8 +32,7 @@ spec:
         - mountPath: "/opt/nifi/data"
           name: data
           pvcSpec:
-            accessModes:
-              - ReadWriteOnce
+            accessModes: [ReadWriteOnce]
             storageClassName: "gp2"
             resources:
               requests:
@@ -64,8 +40,7 @@ spec:
         - mountPath: "/opt/nifi/nifi-current/logs"
           name: logs
           pvcSpec:
-            accessModes:
-              - ReadWriteOnce
+            accessModes: [ReadWriteOnce]
             storageClassName: "gp2"
             resources:
               requests:
@@ -73,8 +48,7 @@ spec:
         - mountPath: "/opt/nifi/flowfile_repository"
           name: flowfile-repo
           pvcSpec:
-            accessModes:
-              - ReadWriteOnce
+            accessModes: [ReadWriteOnce]
             storageClassName: "gp2"
             resources:
               requests:
@@ -82,8 +56,7 @@ spec:
         - mountPath: "/opt/nifi/content_repository"
           name: content-repo
           pvcSpec:
-            accessModes:
-              - ReadWriteOnce
+            accessModes: [ReadWriteOnce]
             storageClassName: "gp2"
             resources:
               requests:
@@ -91,12 +64,39 @@ spec:
         - mountPath: "/opt/nifi/provenance_repository"
           name: provenance-repo
           pvcSpec:
-            accessModes:
-              - ReadWriteOnce
+            accessModes: [ReadWriteOnce]
             storageClassName: "gp2"
             resources:
               requests:
                 storage: 10Gi
+  retryDurationMinutes: 15
   nodes:
     - id: 0
       nodeConfigGroup: "default_group"
+  listenersConfig:
+    internalListeners:
+      - type: "http"
+        name: "http"
+        containerPort: 8080
+      - type: "cluster"
+        name: "cluster"
+        containerPort: 6007
+      - type: "s2s"
+        name: "s2s"
+        containerPort: 10000
+      - type: "load-balance"
+        name: "load-balance"
+        containerPort: 6342
+  externalServices:
+    - name: "nifi-cluster-ip"
+      spec:
+        type: ClusterIP
+        portConfigs:
+          - port: 8080
+            internalListenerName: "http"
+      metadata:
+        labels: {}
+        annotations: {}
+
+zookeeper:
+  enabled: false
