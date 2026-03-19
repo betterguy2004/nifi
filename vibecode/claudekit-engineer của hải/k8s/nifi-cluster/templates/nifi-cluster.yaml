@@ -18,6 +18,8 @@ spec:
     labels:
     {{- toYaml .Values.cluster.service.labels | nindent 6 }}
   pod:
+  {{- if not (or .Values.cluster.pod.annotations .Values.cluster.pod.labels .Values.cluster.pod.hostAliases .Values.cluster.pod.livenessProbe .Values.cluster.pod.readinessProbe) }} {}
+  {{- end }}
   {{- if .Values.cluster.pod.annotations }}
     annotations:
     {{- toYaml .Values.cluster.pod.annotations | nindent 6}}
