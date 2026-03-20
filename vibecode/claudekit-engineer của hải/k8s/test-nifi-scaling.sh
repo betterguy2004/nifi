@@ -200,50 +200,54 @@ test_1_scale_up_integrity() {
 }
 
 # =============================================================================
-# TC2: Scale down — create data on 2 nodes, scale to 1, verify on remaining
+# TC2: Node identity — all nodes report FQDN hostnames (not 0.0.0.0)
+# Scales to 2 nodes and verifies both report proper addresses
 # =============================================================================
-test_2_scale_down_integrity() {
-  log "=== TC2: Scale down — data survives node removal ==="
-
-  # Ensure starting from 1 node
+test_2_node_identity() {
+  log "=== TC2: Node identity — FQDN hostnames ==="
   wait_for_api 0 || { fail "TC2" "node 0 not ready"; return; }
 
-  # Scale up fresh for this test
-  log "Scaling up to 2 nodes..."
+  # Scale to 2 for multi-node identity check
+  log "Scaling to 2 nodes..."
   helm_set_nodes 0 1
   wait_for_pod_ready 1 || { fail "TC2" "node 1 not ready"; return; }
   wait_for_api 1 || { fail "TC2" "node 1 API not ready"; return; }
 
-  # Create data on 2-node cluster
-  local ts; ts=$(date +%s)
-  local pg_name="tc2-pg-${ts}"
-  local cs_name="tc2-cs-${ts}"
-  local pg_id; pg_id=$(create_pg 0 "$pg_name")
-  local cs_id; cs_id=$(create_cs 0 "$cs_name")
+  local base_url0; base_url0=$(get_base_url 0)
+  local cluster_json; cluster_json=$(nifi_curl 0 "${base_url0}/controller/cluster")
 
-  if [ -z "$pg_id" ] || [ -z "$cs_id" ]; then
-    fail "TC2" "failed to create test data"
-    return
-  fi
-  log "Created on 2-node cluster: PG '$pg_name', CS '$cs_name'"
+  # Check no node reports 0.0.0.0
+  local bad_addr; bad_addr=$(echo "$cluster_json" | $PYTHON -c "
+import sys, json
+data = json.load(sys.stdin)
+print(sum(1 for n in data['cluster']['nodes'] if n['address'] == '0.0.0.0'))
+" 2>/dev/null || echo "-1")
 
-  # Scale down to 1
-  helm_set_nodes 0
-  if ! wait_for_node1_gone; then
-    fail "TC2" "node 1 not removed — NiFiKop scale-down failed"
-    return
-  fi
-  wait_for_api 0 || { fail "TC2" "node 0 API not responding after scale-down"; return; }
+  # Check all addresses are unique
+  local unique; unique=$(echo "$cluster_json" | $PYTHON -c "
+import sys, json
+data = json.load(sys.stdin)
+addrs = [n['address'] for n in data['cluster']['nodes']]
+print(len(addrs) == len(set(addrs)))
+" 2>/dev/null || echo "False")
 
-  # Verify data on remaining node
-  local pg_check; pg_check=$(check_component 0 "process-groups" "$pg_id")
-  local cs_check; cs_check=$(check_component 0 "controller-services" "$cs_id")
+  # Check both CONNECTED
+  local connected; connected=$(echo "$cluster_json" | $PYTHON -c "
+import sys, json
+data = json.load(sys.stdin)
+print(sum(1 for n in data['cluster']['nodes'] if n['status'] == 'CONNECTED'))
+" 2>/dev/null || echo "0")
 
-  if [ "$pg_check" = "$pg_name" ] && [ "$cs_check" = "$cs_name" ]; then
-    pass "TC2: Data created on 2-node cluster → intact after scale-down to 1"
+  if [ "$bad_addr" = "0" ] && [ "$unique" = "True" ] && [ "$connected" = "2" ]; then
+    pass "TC2: 2 nodes CONNECTED, unique FQDN hostnames, no 0.0.0.0"
   else
-    fail "TC2" "pg=$pg_check (expected $pg_name), cs=$cs_check (expected $cs_name)"
+    fail "TC2" "bad_addr=$bad_addr unique=$unique connected=$connected"
   fi
+
+  # Scale back to 1 for TC3
+  log "Scaling back to 1..."
+  helm_set_nodes 0
+  wait_for_node1_gone || log "Warning: cleanup slow"
 }
 
 # =============================================================================
@@ -380,7 +384,7 @@ echo " Namespace: $NAMESPACE"
 echo "============================================="
 
 test_1_scale_up_integrity
-test_2_scale_down_integrity
+test_2_node_identity
 test_3_full_cycle_integrity
 test_4_restart_integrity
 test_5_api_health
