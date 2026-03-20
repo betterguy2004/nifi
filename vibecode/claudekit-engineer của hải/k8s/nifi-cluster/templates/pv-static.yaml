@@ -1,0 +1,137 @@
+{{- /*
+Static PersistentVolumes for NiFi cluster using NFS backend.
+These PVs are intentionally static to ensure data persistence across pod restarts.
+When a pod is deleted and recreated, the PVC will automatically bind to the same PV,
+preserving all NiFi data, flowfiles, content, and provenance.
+*/ -}}
+
+---
+# PersistentVolume for NiFi data directory
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "nifi-cluster.fullname" . }}-data-pv
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "nifi-cluster.name" . }}
+    chart: {{ include "nifi-cluster.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    pv-type: nifi-data
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: {{ .Values.nfsServer | quote }}
+    
+    path: {{ .Values.nfsBasePath }}/data
+  claimRef:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "nifi-cluster.fullname" . }}-0-data
+
+---
+# PersistentVolume for NiFi logs
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "nifi-cluster.fullname" . }}-logs-pv
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "nifi-cluster.name" . }}
+    chart: {{ include "nifi-cluster.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    pv-type: nifi-logs
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: {{ .Values.nfsServer | quote }}
+    path: {{ .Values.nfsBasePath }}/logs
+  claimRef:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "nifi-cluster.fullname" . }}-0-logs
+
+---
+# PersistentVolume for NiFi flowfile repository
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "nifi-cluster.fullname" . }}-flowfile-repo-pv
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "nifi-cluster.name" . }}
+    chart: {{ include "nifi-cluster.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    pv-type: nifi-flowfile-repo
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: {{ .Values.nfsServer | quote }}
+    path: {{ .Values.nfsBasePath }}/flowfile-repo
+  claimRef:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "nifi-cluster.fullname" . }}-0-flowfile-repo
+
+---
+# PersistentVolume for NiFi content repository
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "nifi-cluster.fullname" . }}-content-repo-pv
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "nifi-cluster.name" . }}
+    chart: {{ include "nifi-cluster.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    pv-type: nifi-content-repo
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: {{ .Values.nfsServer | quote }}
+    path: {{ .Values.nfsBasePath }}/content-repo
+  claimRef:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "nifi-cluster.fullname" . }}-0-content-repo
+
+---
+# PersistentVolume for NiFi provenance repository
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "nifi-cluster.fullname" . }}-provenance-repo-pv
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "nifi-cluster.name" . }}
+    chart: {{ include "nifi-cluster.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    pv-type: nifi-provenance-repo
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: {{ .Values.nfsServer | quote }}
+    path: {{ .Values.nfsBasePath }}/provenance-repo
+  claimRef:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "nifi-cluster.fullname" . }}-0-provenance-repo
