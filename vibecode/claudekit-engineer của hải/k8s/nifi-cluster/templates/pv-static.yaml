@@ -29,6 +29,9 @@ metadata:
     pv-node-id: {{ $node.id | quote }}
     pv-storage-name: {{ $storage.name | quote }}
 spec:
+  # storageClassName must be "" to prevent default StorageClass assignment
+  # This ensures PVC binds to this static PV instead of triggering dynamic provisioning
+  storageClassName: ""
   capacity:
     storage: {{ default "10Gi" (index $storage.pvcSpec.resources.requests "storage") }}
   accessModes:
