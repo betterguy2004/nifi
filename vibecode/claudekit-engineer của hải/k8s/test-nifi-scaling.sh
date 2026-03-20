@@ -192,6 +192,11 @@ test_1_scale_up_integrity() {
   else
     fail "TC1" "node0=[pg=$pg_on_0,proc=$proc_on_0] node1=[pg=$pg_on_1,proc=$proc_on_1]"
   fi
+
+  # Clean up: scale back to 1 for TC2
+  log "Cleaning up: scaling back to 1 node..."
+  helm_set_nodes 0
+  wait_for_node1_gone || log "Warning: node 1 cleanup slow, TC2 will handle"
 }
 
 # =============================================================================
@@ -200,9 +205,14 @@ test_1_scale_up_integrity() {
 test_2_scale_down_integrity() {
   log "=== TC2: Scale down — data survives node removal ==="
 
-  # Ensure 2 nodes running (from TC1)
+  # Ensure starting from 1 node
   wait_for_api 0 || { fail "TC2" "node 0 not ready"; return; }
-  wait_for_api 1 || { fail "TC2" "node 1 not ready"; return; }
+
+  # Scale up fresh for this test
+  log "Scaling up to 2 nodes..."
+  helm_set_nodes 0 1
+  wait_for_pod_ready 1 || { fail "TC2" "node 1 not ready"; return; }
+  wait_for_api 1 || { fail "TC2" "node 1 API not ready"; return; }
 
   # Create data on 2-node cluster
   local ts; ts=$(date +%s)
