@@ -15,7 +15,6 @@ cluster:
   nifiProperties:
     overrideConfigs: |
       nifi.sensitive.props.key=nifikop-poc-sensitive-key-2026
-      nifi.web.http.host=0.0.0.0
       nifi.web.proxy.context.path=/nifi-cluster
   nodeConfigGroups:
     default_group:
