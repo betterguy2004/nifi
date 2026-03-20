@@ -3,10 +3,6 @@
 # Overrides upstream nifi-cluster chart defaults for NiFi 2.6.0 on Kubernetes manager
 # Usage: helm install nifi-cluster ./k8s/nifi-cluster -f ./k8s/values-nifi-cluster.yaml -n nifi
 
-# NFS Configuration for Static PersistentVolumes
-nfsServer: "10.88.232.89"
-nfsBasePath: "/data/nfs"
-
 cluster:
   manager: kubernetes
   pod: {}
@@ -25,7 +21,12 @@ cluster:
       - "localhost:8080"
       - "127.0.0.1:8080"
   nodeConfigGroups:
-    default_group:
+    # Per-node config groups ensure each node mounts its own NFS subdirectory.
+    # Data lives on NFS server and survives pod delete, helm uninstall, cluster rebuild.
+    # No PV/PVC needed — NiFiKop mounts NFS volumes directly via externalVolumeConfigs.
+    #
+    # To add node 1: copy node_0_group → node_1_group, change paths to node-1/*, add to nodes list.
+    node_0_group:
       isNode: true
       imagePullPolicy: IfNotPresent
       serviceAccountName: "nifi-cluster"
@@ -36,59 +37,36 @@ cluster:
         limits:
           cpu: "2"
           memory: 4Gi
-      # reclaimPolicy: Retain ensures PVCs survive pod deletion
-      # PVCs will automatically bind to the Static PersistentVolumes defined in templates/pv-static.yaml
-      # When a pod is deleted and recreated, it will use the same PVC and thus the same NFS storage
-      storageConfigs:
-        - mountPath: "/opt/nifi/data"
-          name: data
-          reclaimPolicy: Retain
-          pvcSpec:
-            accessModes: [ReadWriteOnce]
-            storageClassName: ""
-            resources:
-              requests:
-                storage: 10Gi
-        - mountPath: "/opt/nifi/nifi-current/logs"
-          name: logs
-          reclaimPolicy: Retain
-          pvcSpec:
-            accessModes: [ReadWriteOnce]
-            storageClassName: ""
-            resources:
-              requests:
-                storage: 10Gi
-        - mountPath: "/opt/nifi/flowfile_repository"
-          name: flowfile-repo
-          reclaimPolicy: Retain
-          pvcSpec:
-            accessModes: [ReadWriteOnce]
-            storageClassName: ""
-            resources:
-              requests:
-                storage: 10Gi
-        - mountPath: "/opt/nifi/content_repository"
-          name: content-repo
-          reclaimPolicy: Retain
-          pvcSpec:
-            accessModes: [ReadWriteOnce]
-            storageClassName: ""
-            resources:
-              requests:
-                storage: 10Gi
-        - mountPath: "/opt/nifi/provenance_repository"
-          name: provenance-repo
-          reclaimPolicy: Retain
-          pvcSpec:
-            accessModes: [ReadWriteOnce]
-            storageClassName: ""
-            resources:
-              requests:
-                storage: 10Gi
+      externalVolumeConfigs:
+        - name: data
+          mountPath: "/opt/nifi/data"
+          nfs:
+            server: "10.88.232.89"
+            path: "/data/nfs/node-0/data"
+        - name: logs
+          mountPath: "/opt/nifi/nifi-current/logs"
+          nfs:
+            server: "10.88.232.89"
+            path: "/data/nfs/node-0/logs"
+        - name: flowfile-repo
+          mountPath: "/opt/nifi/flowfile_repository"
+          nfs:
+            server: "10.88.232.89"
+            path: "/data/nfs/node-0/flowfile-repo"
+        - name: content-repo
+          mountPath: "/opt/nifi/content_repository"
+          nfs:
+            server: "10.88.232.89"
+            path: "/data/nfs/node-0/content-repo"
+        - name: provenance-repo
+          mountPath: "/opt/nifi/provenance_repository"
+          nfs:
+            server: "10.88.232.89"
+            path: "/data/nfs/node-0/provenance-repo"
   retryDurationMinutes: 15
   nodes:
     - id: 0
-      nodeConfigGroup: "default_group"
+      nodeConfigGroup: "node_0_group"
   listenersConfig:
     internalListeners:
       - type: "http"
