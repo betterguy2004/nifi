@@ -50,6 +50,7 @@ kubectl get pods -n nifi -l app=nifi -w
 ## 3. Access NiFi UI
 
 ```bash
+# Access NiFi UI
 kubectl port-forward svc/nifi-cluster-ip 8080:8080 -n nifi
 # Open http://localhost:8080/nifi
 ```
