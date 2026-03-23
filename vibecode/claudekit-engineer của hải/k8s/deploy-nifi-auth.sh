@@ -1,6 +1,7 @@
 #!/bin/bash
 # Deploy NiFi with single-user authentication (HTTPS + username/password)
-# TLS is managed by the NiFiKop operator (cert-manager PKI) — no manual certs needed.
+# TLS is managed by the NiFiKop operator (cert-manager PKI).
+# Credentials secret is managed by the Helm chart.
 #
 # Prerequisites:
 #   - kubectl configured with cluster access
@@ -17,22 +18,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Ensure namespace exists
 kubectl get ns "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
 
-echo "=== Phase 1: Create K8s Secrets ==="
-
-# Create single-user credentials secret
-kubectl delete secret single-user-credentials -n "$NAMESPACE" 2>/dev/null || true
-kubectl create secret generic single-user-credentials \
-  --from-literal=username=admin \
-  --from-literal=password='NiFi-P0C-2026!' \
-  -n "$NAMESPACE"
-echo "✓ Credentials secret created (admin / NiFi-P0C-2026!)"
-
 # Clean up stale secrets from previous installs that block operator reconciliation
 kubectl delete secret nifi-cluster-tls -n "$NAMESPACE" 2>/dev/null || true
 kubectl delete secret nifi-cluster-controller -n "$NAMESPACE" 2>/dev/null || true
 
-echo ""
-echo "=== Phase 2: Helm Install/Upgrade ==="
+echo "=== Helm Install/Upgrade ==="
 
 helm upgrade --install nifi-cluster "$SCRIPT_DIR/nifi-cluster" \
   -f "$SCRIPT_DIR/nifi-cluster/values-override.yaml" \

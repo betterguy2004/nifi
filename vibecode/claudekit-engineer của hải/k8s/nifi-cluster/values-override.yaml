@@ -178,5 +178,10 @@ cluster:
         labels: {}
         annotations: {}
 
+# Single-user login credentials (rendered into K8s Secret by the chart)
+singleUserCredentials:
+  username: admin
+  password: "NiFi-P0C-2026!"
+
 zookeeper:
   enabled: false
