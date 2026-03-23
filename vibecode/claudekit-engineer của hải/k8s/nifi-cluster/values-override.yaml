@@ -34,10 +34,7 @@ cluster:
     webProxyNodePorts:
       enabled: true
       hosts:
-        - "44.222.72.21"
-        - "100.31.119.78"
-        - "44.200.227.238"
-        - "18.234.98.33"
+        - "34.226.226.116"
   # Storage toggle:
   #   true  = direct NFS mounts via externalVolumeConfigs (no PV/PVC)
   #   false = dynamic PVCs via storageConfigs (requires a StorageClass)
