@@ -22,5 +22,6 @@ certManager:
 webhook:
   enabled: false
 
+
 logLevel: Info
 logEncoding: json
