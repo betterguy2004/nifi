@@ -12,20 +12,38 @@ cluster:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   image:
     tag: "2.6.0"
+  # Single-user authentication: login with username/password
+  singleUserConfiguration:
+    enabled: true
+    authorizerEnabled: true
+    secretRef:
+      name: "single-user-credentials"
+      namespace: "nifi"
+    secretKeys:
+      username: "username"
+      password: "password"
   nifiProperties:
     overrideConfigs: |
       nifi.sensitive.props.key=nifikop-poc-sensitive-key-2026
-      nifi.web.http.host=0.0.0.0
       nifi.web.proxy.context.path=/nifi-cluster
     webProxyHosts:
-      - "localhost:8080"
-      - "127.0.0.1:8080"
+      - "localhost:8443"
+      - "127.0.0.1:8443"
+      - "localhost:30443"
+      - "127.0.0.1:30443"
+    webProxyNodePorts:
+      enabled: true
+      hosts:
+        - "44.222.72.21"
+        - "100.31.119.78"
+        - "44.200.227.238"
+        - "18.234.98.33"
+  # Storage toggle:
+  #   true  = direct NFS mounts via externalVolumeConfigs (no PV/PVC)
+  #   false = dynamic PVCs via storageConfigs (requires a StorageClass)
+  useExternalVolumes: false
+
   nodeConfigGroups:
-    # Per-node config groups ensure each node mounts its own NFS subdirectory.
-    # Data lives on NFS server and survives pod delete, helm uninstall, cluster rebuild.
-    # No PV/PVC needed — NiFiKop mounts NFS volumes directly via externalVolumeConfigs.
-    #
-    # To add node 1: copy node_0_group → node_1_group, change paths to node-1/*, add to nodes list.
     node_0_group:
       isNode: true
       imagePullPolicy: IfNotPresent
@@ -37,6 +55,7 @@ cluster:
         limits:
           cpu: "2"
           memory: 4Gi
+      # Used when useExternalVolumes: true
       externalVolumeConfigs:
         - name: data
           mountPath: "/opt/nifi/data"
@@ -63,15 +82,71 @@ cluster:
           nfs:
             server: "10.88.232.89"
             path: "/data/nfs/node-0/provenance-repo"
+        - name: config
+          mountPath: "/opt/nifi/nifi-current/conf"
+          nfs:
+            server: "10.88.232.89"
+            path: "/data/nfs/node-0/config"
+
+      # Used when useExternalVolumes: false
+      storageConfigs:
+        - name: data
+          mountPath: "/opt/nifi/data"
+          pvcSpec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: "ebs-sc"
+            resources:
+              requests:
+                storage: 10Gi
+        - name: logs
+          mountPath: "/opt/nifi/nifi-current/logs"
+          pvcSpec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: "ebs-sc"
+            resources:
+              requests:
+                storage: 10Gi
+        - name: flowfile-repo
+          mountPath: "/opt/nifi/flowfile_repository"
+          pvcSpec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: "ebs-sc"
+            resources:
+              requests:
+                storage: 10Gi
+        - name: content-repo
+          mountPath: "/opt/nifi/content_repository"
+          pvcSpec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: "ebs-sc"
+            resources:
+              requests:
+                storage: 10Gi
+        - name: provenance-repo
+          mountPath: "/opt/nifi/provenance_repository"
+          pvcSpec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: "ebs-sc"
+            resources:
+              requests:
+                storage: 10Gi
+        - name: config
+          mountPath: "/opt/nifi/nifi-current/conf"
+          pvcSpec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: "ebs-sc"
+            resources:
+              requests:
+                storage: 10Gi
   retryDurationMinutes: 15
   nodes:
     - id: 0
       nodeConfigGroup: "node_0_group"
   listenersConfig:
     internalListeners:
-      - type: "http"
-        name: "http"
-        containerPort: 8080
+      - type: "https"
+        name: "https"
+        containerPort: 8443
       - type: "cluster"
         name: "cluster"
         containerPort: 6007
@@ -81,13 +156,27 @@ cluster:
       - type: "load-balance"
         name: "load-balance"
         containerPort: 6342
+    sslSecrets:
+      tlsSecretName: "nifi-cluster-tls"
+      create: true
+      clusterScoped: false
   externalServices:
     - name: "nifi-cluster-ip"
       spec:
         type: ClusterIP
         portConfigs:
-          - port: 8080
-            internalListenerName: "http"
+          - port: 8443
+            internalListenerName: "https"
+      metadata:
+        labels: {}
+        annotations: {}
+    - name: "nifi-cluster-np"
+      spec:
+        type: NodePort
+        portConfigs:
+          - port: 8443
+            internalListenerName: "https"
+            nodePort: 30443
       metadata:
         labels: {}
         annotations: {}

@@ -179,7 +179,14 @@ spec:
       serviceAccountName: {{ tpl (default (include "nifi-cluster.fullname" .) .Values.serviceAccount.name) . }}
     {{- end }}
   {{- else }}
-  {{- tpl (toYaml .Values.cluster.nodeConfigGroups) . | nindent 4 }}
+    {{- range $name, $config := .Values.cluster.nodeConfigGroups }}
+    {{ $name }}:
+    {{- if $.Values.cluster.useExternalVolumes }}
+      {{- omit $config "storageConfigs" | toYaml | nindent 6 }}
+    {{- else }}
+      {{- omit $config "externalVolumeConfigs" | toYaml | nindent 6 }}
+    {{- end }}
+    {{- end }}
   {{- end }}
   nodes:
   {{- toYaml .Values.cluster.nodes | nindent 4 }}

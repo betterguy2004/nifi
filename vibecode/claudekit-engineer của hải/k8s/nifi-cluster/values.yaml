@@ -191,6 +191,9 @@ cluster:
       dataDir=./state/zookeeper
       autopurge.snapRetainCount=30
   
+  # -- Storage toggle: true=externalVolumeConfigs (NFS direct), false=storageConfigs (PVC)
+  useExternalVolumes: true
+
   # -- Defines configurations for nodes which can be used in list of nodes in cluster.
   #    See: https://konpyutaika.github.io/nifikop/docs/5_references/1_nifi_cluster/3_node_config
   nodeConfigGroups: {}
