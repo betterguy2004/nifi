@@ -18,7 +18,7 @@ cluster:
     authorizerEnabled: true
     secretRef:
       name: "single-user-credentials"
-      namespace: "nifi"
+      namespace: "nifi-1"
     secretKeys:
       username: "username"
       password: "password"

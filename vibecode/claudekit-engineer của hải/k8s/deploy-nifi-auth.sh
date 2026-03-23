@@ -8,12 +8,14 @@
 #   - NiFiKop operator watching this namespace
 #
 # Usage:
-#   bash k8s/deploy-nifi-auth.sh          # deploys to "nifi" namespace
-#   bash k8s/deploy-nifi-auth.sh nifi-1   # deploys to "nifi-1" namespace
+#   bash k8s/deploy-nifi-auth.sh                          # deploys to "nifi" namespace
+#   bash k8s/deploy-nifi-auth.sh nifi-1                   # deploys to "nifi-1" namespace
+#   bash k8s/deploy-nifi-auth.sh nifi-1 34.226.226.116    # with public IP in cert SANs
 
 set -euo pipefail
 
 NAMESPACE="${1:-nifi}"
+PUBLIC_IP="${2:-}"  # optional: public IP for NodePort access
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CERT_DIR="${LOCALAPPDATA:-${TMPDIR:-/tmp}}/Temp/nifi-certs-$NAMESPACE"
 
@@ -60,6 +62,7 @@ DNS.2 = *.${NAMESPACE}.svc.cluster.local
 DNS.3 = nifi-cluster-headless.${NAMESPACE}.svc.cluster.local
 DNS.4 = localhost
 IP.1 = 127.0.0.1
+$([ -n "$PUBLIC_IP" ] && echo "IP.2 = $PUBLIC_IP")
 SANEOF
 
 openssl genrsa -out "$CERT_DIR/server.key" 4096

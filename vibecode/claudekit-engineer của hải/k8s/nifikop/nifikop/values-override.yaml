@@ -6,7 +6,7 @@ image:
   pullPolicy: IfNotPresent
 
 namespaces:
-  - nifi
+  - nifi-1
 
 resources:
   requests:
